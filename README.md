@@ -23,20 +23,16 @@ A modern, responsive Identity and Access Management (IAM) frontend application b
 ### 🎨 Modern UI/UX
 
 - **Responsive Design** - Mobile-first responsive layout
-- **Dark/Light Mode** - Theme switching support
 - **Professional Design** - Clean, modern interface
 - **Amber Minimal Theme** - Beautiful color scheme
 - **Interactive Components** - Smooth animations and transitions
-- **Accessibility** - WCAG compliant components
 
 ### 🛠️ Advanced Features
 
 - **Permission Simulation** - Test user permissions before assignment
-- **Real-time Updates** - Live data synchronization
 - **Advanced Filtering** - Search and filter across all entities
 - **Bulk Operations** - Efficient multi-item management
 - **Audit Trail Visualization** - System activity monitoring
-- **Export/Import** - Data management capabilities
 
 ## 🛠️ Technology Stack
 
@@ -45,7 +41,7 @@ A modern, responsive Identity and Access Management (IAM) frontend application b
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **State Management**: Redux Toolkit
 - **Routing**: React Router v6
-- **HTTP Client**: Axios with interceptors
+- **HTTP Client**: Axios with interceptors and React Query
 - **Form Handling**: React Hook Form + Zod validation
 - **Icons**: Lucide React
 - **Development**: ESLint, TypeScript, Hot Module Replacement
@@ -380,30 +376,6 @@ npm run build
 # Files will be in dist/ directory
 ```
 
-### Environment Variables
-
-Set production environment variables:
-
-```env
-VITE_API_BASE_URL=https://your-api-domain.com/api
-VITE_APP_NAME=IAM System
-VITE_DEV_MODE=false
-```
-
-### Deployment Options
-
-- **Static Hosting**: Netlify, Vercel, GitHub Pages
-- **CDN**: CloudFront, CloudFlare
-- **Traditional Hosting**: Apache, Nginx
-
-## 🧪 Testing
-
-### Testing Strategy
-
-- **Component Testing**: Test individual components
-- **Integration Testing**: Test component interactions
-- **E2E Testing**: Test complete user workflows
-
 ### Testing Tools (Future)
 
 - **Vitest**: Unit testing framework
@@ -458,18 +430,6 @@ export default defineConfig({
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Vite Guide](https://vitejs.dev/guide/)
 - [Redux Toolkit](https://redux-toolkit.js.org/)
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-
-- Create an issue in the repository
-- Check the documentation
-- Review component examples in the codebase
 
 ---
 
