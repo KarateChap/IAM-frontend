@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Shield,
@@ -48,6 +47,7 @@ import {
 import { useMyPermissions } from "@/hooks/useAuth";
 import { useModules } from "@/hooks/useModules";
 import { useSimulateAction } from "@/hooks/useAuth";
+import { canRead } from "@/utils/permissions";
 import type { RootState } from "@/store";
 import type { Permission, SimulateActionRequest } from "@/types";
 
@@ -70,6 +70,15 @@ export default function DashboardPage() {
   const { data: modulesResponse } = useModules({});
   const modules = modulesResponse?.data || [];
   const simulateActionMutation = useSimulateAction();
+
+  // Check if user has read permission for "Modules" module to access simulation
+  const canReadModules = canRead(permissions, 'Modules');
+  
+  // If user can read Modules, they can see all modules in simulation dropdown
+  const accessibleModules = canReadModules ? modules : [];
+  
+  // Check if user has permission to access the simulation feature
+  const hasAnyReadPermission = canReadModules;
 
   const form = useForm<SimulateFormData>({
     resolver: zodResolver(simulateSchema),
@@ -139,12 +148,12 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-[#f2b878]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Permissions
             </CardTitle>
-            <Shield className="h-4 w-4 text-blue-500" />
+            <Shield className="h-4 w-4 text-[#f2b878]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{permissions.length}</div>
@@ -155,12 +164,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-[#f2b878]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Module Access
             </CardTitle>
-            <Settings className="h-4 w-4 text-green-500" />
+            <Settings className="h-4 w-4 text-[#f2b878]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -173,12 +182,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-l-4 border-l-[#f2b878]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Create Actions
             </CardTitle>
-            <Activity className="h-4 w-4 text-orange-500" />
+            <Activity className="h-4 w-4 text-[#f2b878]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -191,19 +200,19 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-l-4 border-l-[#f2b878]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Admin Level
             </CardTitle>
-            <Users className="h-4 w-4 text-red-500" />
+            <Users className="h-4 w-4 text-[#f2b878]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {permissions.filter(
                 (p) => p.module?.name === "Users" && p.action === "delete"
               ).length > 0 ? (
-                <span className="text-red-500">Full</span>
+                <span className="text-[#fb982f]">Full</span>
               ) : (
                 <span className="text-muted-foreground">Limited</span>
               )}
@@ -265,7 +274,7 @@ export default function DashboardPage() {
                             {modulePermissions.length !== 1 ? "s" : ""}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        <div className="flex flex-wrap gap-x-2 gap-y-2">
                           {modulePermissions.map((permission) => {
                             const getActionColor = (action: string) => {
                               switch (action) {
@@ -296,10 +305,6 @@ export default function DashboardPage() {
                           })}
                         </div>
                         <div className="mt-2">
-                          <Progress
-                            value={(modulePermissions.length / 4) * 100}
-                            className="h-1.5"
-                          />
                           <p className="text-xs text-muted-foreground mt-1">
                             {modulePermissions.length} of 4 possible actions
                           </p>
@@ -321,157 +326,172 @@ export default function DashboardPage() {
               <CardTitle className="text-xl">Simulate Action</CardTitle>
             </div>
             <CardDescription className="text-base">
-              Test if you have permission to perform a specific action on any
-              module
+              {hasAnyReadPermission 
+                ? "Test if you have permission to perform a specific action on any module"
+                : "Permission simulation requires module access"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSimulate)}
-                className="space-y-6"
-              >
-                <div className="flex flex-col md:flex-row gap-x-4 gap-y-4 items-end">
-                  <FormField
-                    control={form.control}
-                    name="resource"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Module</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            const selectedModule = modules?.find(
-                              (m) => m.id.toString() === value
-                            );
-                            field.onChange(selectedModule?.name || "");
-                          }}
-                          value={
-                            modules
-                              ?.find((m) => m.name === field.value)
-                              ?.id?.toString() || ""
-                          }
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a module" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {modules?.map((module) => (
-                              <SelectItem
-                                key={module.id}
-                                value={module.id.toString()}
-                              >
-                                {module.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="action"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Action</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select an action" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="create">Create</SelectItem>
-                            <SelectItem value="read">Read</SelectItem>
-                            <SelectItem value="update">Update</SelectItem>
-                            <SelectItem value="delete">Delete</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 flex-shrink-0"
-                    disabled={simulateActionMutation.isPending}
+            {!hasAnyReadPermission ? (
+              <div className="text-center py-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Module Access</h3>
+                <p className="text-muted-foreground mb-4">
+                  You don't have read permissions for any modules.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please request permissions from your administrator to access the permission simulation feature.
+                </p>
+              </div>
+            ) : (
+              <>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSimulate)}
+                    className="space-y-6"
                   >
-                    {simulateActionMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                        Checking...
-                      </>
-                    ) : (
-                      <>
-                        <Activity className="h-5 w-5 mr-2" />
-                        Check Permission
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
+                    <div className="flex flex-col md:flex-row gap-x-4 gap-y-4 items-end">
+                      <FormField
+                        control={form.control}
+                        name="resource"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Module</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                const selectedModule = accessibleModules?.find(
+                                  (m) => m.id.toString() === value
+                                );
+                                field.onChange(selectedModule?.name || "");
+                              }}
+                              value={
+                                accessibleModules
+                                  ?.find((m) => m.name === field.value)
+                                  ?.id?.toString() || ""
+                              }
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a module" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {accessibleModules?.map((module) => (
+                                  <SelectItem
+                                    key={module.id}
+                                    value={module.id.toString()}
+                                  >
+                                    {module.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-            {simulationResult && (
-              <div className="mt-6">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    {simulationResult.allowed ? (
-                      <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
-                    )}
-                    <div className="font-semibold text-lg">
-                      {simulationResult.allowed
-                        ? "Access Granted"
-                        : "Access Denied"}
+                      <FormField
+                        control={form.control}
+                        name="action"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Action</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select an action" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="create">Create</SelectItem>
+                                <SelectItem value="read">Read</SelectItem>
+                                <SelectItem value="update">Update</SelectItem>
+                                <SelectItem value="delete">Delete</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="submit"
+                        className="font-semibold flex-shrink-0"
+                        disabled={simulateActionMutation.isPending}
+                      >
+                        {simulateActionMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                            Checking...
+                          </>
+                        ) : (
+                          <>
+                            <Activity className="h-5 w-5 mr-2" />
+                            Check Permission
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+
+                {simulationResult && (
+                  <div className="mt-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        {simulationResult.allowed ? (
+                          <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+                        )}
+                        <div className="font-semibold text-lg">
+                          {simulationResult.allowed
+                            ? "Access Granted"
+                            : "Access Denied"}
+                        </div>
+                      </div>
+
+                      <div className="text-sm leading-relaxed pl-0">
+                        {simulationResult.allowed
+                          ? `You have permission to ${
+                              form.getValues("action")
+                            } in the ${form.getValues("resource")} module.`
+                          : simulationResult.reason}
+                      </div>
+
+                      {!simulationResult.allowed && (
+                        <div className="text-xs leading-relaxed pl-0 text-muted-foreground">
+                          You don't have the required permissions to perform this
+                          action.
+                        </div>
+                      )}
                     </div>
                   </div>
+                )}
 
-                  <div className="text-sm leading-relaxed pl-0">
-                    {simulationResult.allowed
-                      ? `You have permission to ${form.getValues(
-                          "action"
-                        )} in the ${form.getValues("resource")} module.`
-                      : simulationResult.reason}
-                  </div>
+                {simulateActionMutation.error && (
+                  <div className="mt-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+                        <div className="font-semibold text-lg">Error</div>
+                      </div>
 
-                  {!simulationResult.allowed && (
-                    <div className="text-xs leading-relaxed pl-0 text-muted-foreground">
-                      You don't have the required permissions to perform this
-                      action.
+                      <div className="text-sm leading-relaxed pl-0">
+                        {simulateActionMutation.error.message}
+                      </div>
+
+                      <div className="text-xs leading-relaxed pl-0 text-muted-foreground">
+                        Please try again or contact support if the issue persists.
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {simulateActionMutation.error && (
-              <div className="mt-6">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
-                    <div className="font-semibold text-lg">Error</div>
                   </div>
-
-                  <div className="text-sm leading-relaxed pl-0">
-                    {simulateActionMutation.error.message}
-                  </div>
-
-                  <div className="text-xs leading-relaxed pl-0 text-muted-foreground">
-                    Please try again or contact support if the issue persists.
-                  </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

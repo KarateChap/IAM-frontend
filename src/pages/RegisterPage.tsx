@@ -184,7 +184,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-green-600 via-blue-600 to-purple-700 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-[#d4943d] via-[#e6a55a] to-[#f2b878] relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
           <div className="flex items-center mb-8">
@@ -194,23 +194,23 @@ export default function RegisterPage() {
           <h2 className="text-4xl font-bold mb-6 leading-tight">
             Join Our
             <br />
-            <span className="text-green-200">Secure Platform</span>
+            <span className="text-amber-200">Secure Platform</span>
           </h2>
-          <p className="text-xl text-green-100 mb-8 leading-relaxed">
+          <p className="text-xl text-amber-100 mb-8 leading-relaxed">
             Create your account and get instant access to enterprise-grade identity and access management tools.
           </p>
           <div className="space-y-4">
             <div className="flex items-center">
-              <UserPlus className="h-5 w-5 mr-3 text-green-200" />
-              <span className="text-green-100">Quick Setup Process</span>
+              <UserPlus className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Quick Setup Process</span>
             </div>
             <div className="flex items-center">
-              <Shield className="h-5 w-5 mr-3 text-green-200" />
-              <span className="text-green-100">Secure by Default</span>
+              <Shield className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Secure by Default</span>
             </div>
             <div className="flex items-center">
-              <Server className="h-5 w-5 mr-3 text-green-200" />
-              <span className="text-green-100">Enterprise Ready</span>
+              <Server className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Enterprise Ready</span>
             </div>
           </div>
         </div>
@@ -437,7 +437,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold py-3 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                className="w-full font-semibold py-3"
                 disabled={registerMutation.isPending}
                 size="lg"
               >
@@ -458,7 +458,7 @@ export default function RegisterPage() {
               Already have an account?{' '}
               <Link 
                 to="/login" 
-                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 hover:underline"
+                className="font-medium text-[#f2b878] hover:text-[#e6a55a] dark:text-[#f2b878] dark:hover:text-[#e6a55a] transition-colors duration-200 hover:underline"
               >
                 Sign in here
               </Link>

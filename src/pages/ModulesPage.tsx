@@ -109,11 +109,69 @@ export default function ModulesPage() {
   };
 
   const handleDelete = async (moduleId: number) => {
-    if (!confirm("Are you sure you want to delete this module?")) {
+    const module = modules.find((m) => m.id === moduleId);
+    const moduleName = module?.name || "this module";
+
+    let confirmMessage = `Are you sure you want to delete the module "${moduleName}"?`;
+
+    confirmMessage += `\n\nThis action cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
-    deleteModuleMutation.mutate(moduleId);
+    console.log("Attempting to delete module:", moduleId, moduleName);
+
+    deleteModuleMutation.mutate(moduleId, {
+      onSuccess: (response: {
+        success: boolean;
+        message: string;
+        deletedPermissions?: number;
+        moduleName?: string;
+      }) => {
+        console.log(`Module "${moduleName}" deleted successfully:`, response);
+
+        const deletedPermissions = response?.deletedPermissions || 0;
+        let successMessage = `✅ Module "${moduleName}" has been deleted successfully!`;
+
+        if (deletedPermissions > 0) {
+          successMessage += `\n\n🗑️ Cascade deletion completed:\n• ${deletedPermissions} permission(s) deleted\n• All related role assignments removed`;
+        }
+
+        alert(successMessage);
+      },
+      onError: (
+        error: Error & {
+          response?: { status: number; data?: { message?: string } };
+        }
+      ) => {
+        console.error("Failed to delete module:", error);
+
+        // Handle specific error cases
+        if (error.response?.status === 422) {
+          const errorMessage = error.response?.data?.message || error.message;
+
+          if (errorMessage.includes("existing permissions")) {
+            alert(
+              `❌ Cannot delete module "${moduleName}"\n\n` +
+                `This module has existing permissions that must be deleted first.\n\n` +
+                `To delete this module:\n` +
+                `1. Go to the Permissions page\n` +
+                `2. Delete all permissions for the "${moduleName}" module\n` +
+                `3. Then return here to delete the module`
+            );
+          } else {
+            alert(`❌ Cannot delete module "${moduleName}"\n\n${errorMessage}`);
+          }
+        } else {
+          alert(
+            `❌ Failed to delete module "${moduleName}"\n\n${
+              error.message || "An unexpected error occurred"
+            }`
+          );
+        }
+      },
+    });
   };
 
   const onSubmit = async (data: ModuleFormData) => {
@@ -266,11 +324,40 @@ export default function ModulesPage() {
         </Alert>
       )}
 
+      {deleteModuleMutation.error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Failed to delete module:{" "}
+            {deleteModuleMutation.error?.message || "An error occurred"}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {createModuleMutation.error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Failed to create module:{" "}
+            {createModuleMutation.error?.message || "An error occurred"}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {updateModuleMutation.error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Failed to update module:{" "}
+            {updateModuleMutation.error?.message || "An error occurred"}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card className="shadow-sm">
         <CardHeader>
           <div className="space-y-6">
             <CardTitle>Modules List</CardTitle>
-            <CardDescription>A list of all modules in the system</CardDescription>
+            <CardDescription>
+              A list of all modules in the system
+            </CardDescription>
           </div>
           <div className="pt-4">
             <div className="flex items-center space-x-2 max-w-md">
@@ -358,6 +445,11 @@ export default function ModulesPage() {
                               size="sm"
                               onClick={() => handleDelete(module.id)}
                               className="hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
+                              title={
+                                (module.permissions?.length || 0) > 0
+                                  ? `Warning: Module has ${module.permissions?.length} permission(s). Cascade delete will remove all permissions.`
+                                  : "Delete module"
+                              }
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

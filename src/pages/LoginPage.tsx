@@ -282,7 +282,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-[#d4943d] via-[#e6a55a] to-[#f2b878] relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
           <div className="flex items-center mb-8">
@@ -292,23 +292,23 @@ export default function LoginPage() {
           <h2 className="text-4xl font-bold mb-6 leading-tight">
             Secure Access
             <br />
-            <span className="text-blue-200">Management</span>
+            <span className="text-amber-200">Management</span>
           </h2>
-          <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+          <p className="text-xl text-amber-100 mb-8 leading-relaxed">
             Streamline your identity and access management with enterprise-grade security and intuitive controls.
           </p>
           <div className="space-y-4">
             <div className="flex items-center">
-              <Shield className="h-5 w-5 mr-3 text-blue-200" />
-              <span className="text-blue-100">Enterprise Security</span>
+              <Shield className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Enterprise Security</span>
             </div>
             <div className="flex items-center">
-              <Lock className="h-5 w-5 mr-3 text-blue-200" />
-              <span className="text-blue-100">Role-Based Access Control</span>
+              <Lock className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Role-Based Access Control</span>
             </div>
             <div className="flex items-center">
-              <Server className="h-5 w-5 mr-3 text-blue-200" />
-              <span className="text-blue-100">Centralized Management</span>
+              <Server className="h-5 w-5 mr-3 text-amber-200" />
+              <span className="text-amber-100">Centralized Management</span>
             </div>
           </div>
         </div>
@@ -441,7 +441,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" 
+                className="w-full h-12 font-semibold" 
                 disabled={loginMutation.isPending}
                 size="lg"
               >
@@ -457,9 +457,9 @@ export default function LoginPage() {
             </form>
           </Form>
 
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Demo Credentials:</p>
-            <div className="space-y-1 text-sm text-blue-700 dark:text-blue-300">
+          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">Demo Credentials:</p>
+            <div className="space-y-1 text-sm text-amber-700 dark:text-amber-300">
               <p><span className="font-medium">Email:</span> admin@example.com</p>
               <p><span className="font-medium">Password:</span> Admin123!</p>
             </div>
@@ -470,7 +470,7 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                className="font-medium text-[#f2b878] hover:text-[#e6a55a] dark:text-[#f2b878] dark:hover:text-[#e6a55a] transition-colors"
               >
                 Create one here
               </Link>

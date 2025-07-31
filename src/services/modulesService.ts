@@ -22,6 +22,10 @@ interface BackendModuleResponse {
 interface BackendDeleteResponse {
   success: boolean
   message: string
+  data?: {
+    deletedPermissions: number
+    moduleName: string
+  }
 }
 
 export const modulesService = {
@@ -68,11 +72,13 @@ export const modulesService = {
     return response.data.data
   },
 
-  deleteModule: async (id: number): Promise<{ success: boolean; message: string }> => {
+  deleteModule: async (id: number): Promise<{ success: boolean; message: string; deletedPermissions?: number; moduleName?: string }> => {
     const response = await api.delete<BackendDeleteResponse>(`/modules/${id}`)
     return {
       success: response.data.success,
-      message: response.data.message
+      message: response.data.message,
+      deletedPermissions: response.data.data?.deletedPermissions,
+      moduleName: response.data.data?.moduleName
     }
   },
 }

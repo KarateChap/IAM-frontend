@@ -402,10 +402,10 @@ export default function PermissionsPage() {
                 ) : (
                   filteredPermissions.map((permission) => (
                     <TableRow key={permission.id}>
-                      <TableCell className="p-4 align-middle font-medium">
+                      <TableCell className="font-medium">
                         {permission.name}
                       </TableCell>
-                      <TableCell className="p-4 align-middle">
+                      <TableCell>
                         <Badge
                           variant="outline"
                           className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300"
@@ -413,7 +413,7 @@ export default function PermissionsPage() {
                           {permission.module?.name || "Unknown"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="p-4 align-middle">
+                      <TableCell>
                         <Badge
                           variant="default"
                           className={`${
@@ -431,14 +431,14 @@ export default function PermissionsPage() {
                           {permission.action}
                         </Badge>
                       </TableCell>
-                      <TableCell className="p-4 align-middle">
+                      <TableCell>
                         {permission.description || (
                           <span className="text-muted-foreground">
                             No description
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="p-4 align-middle">
+                      <TableCell>
                         <Badge
                           variant={
                             permission.isActive ? "default" : "secondary"
@@ -452,7 +452,7 @@ export default function PermissionsPage() {
                           {permission.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="p-4 align-middle">
+                      <TableCell>
                         <div className="flex items-center space-x-2">
                           {canUpdatePermissions && (
                             <Button
