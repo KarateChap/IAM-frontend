@@ -123,31 +123,37 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header Section with User Profile */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Welcome back, {user?.firstName || user?.username}!
           </p>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium">
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
             <AvatarImage src="" alt={user?.username} />
             <AvatarFallback className="bg-primary text-primary-foreground">
-              <User className="h-5 w-5" />
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
             </AvatarFallback>
           </Avatar>
+          <div className="text-left sm:hidden">
+            <p className="text-sm font-medium">
+              {user?.firstName} {user?.lastName}
+            </p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-[#f2b878]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -236,7 +242,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* My Permissions Card */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -323,9 +329,9 @@ export default function DashboardPage() {
           <CardHeader className="pb-4">
             <div className="flex items-center space-x-2">
               <Activity className="h-5 w-5 text-primary" />
-              <CardTitle className="text-xl">Simulate Action</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Simulate Action</CardTitle>
             </div>
-            <CardDescription className="text-base">
+            <CardDescription className="text-sm sm:text-base">
               {hasAnyReadPermission 
                 ? "Test if you have permission to perform a specific action on any module"
                 : "Permission simulation requires module access"}
@@ -348,107 +354,114 @@ export default function DashboardPage() {
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onSimulate)}
-                    className="space-y-6"
+                    className="space-y-4 sm:space-y-6"
                   >
-                    <div className="flex flex-col md:flex-row gap-x-4 gap-y-4 items-end">
-                      <FormField
-                        control={form.control}
-                        name="resource"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Module</FormLabel>
-                            <Select
-                              onValueChange={(value) => {
-                                const selectedModule = accessibleModules?.find(
-                                  (m) => m.id.toString() === value
-                                );
-                                field.onChange(selectedModule?.name || "");
-                              }}
-                              value={
-                                accessibleModules
-                                  ?.find((m) => m.name === field.value)
-                                  ?.id?.toString() || ""
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a module" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {accessibleModules?.map((module) => (
-                                  <SelectItem
-                                    key={module.id}
-                                    value={module.id.toString()}
-                                  >
-                                    {module.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <div className="space-y-4">
+                      {/* Form Fields Container */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="resource"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-sm font-medium">Module</FormLabel>
+                              <Select
+                                onValueChange={(value) => {
+                                  const selectedModule = accessibleModules?.find(
+                                    (m) => m.id.toString() === value
+                                  );
+                                  field.onChange(selectedModule?.name || "");
+                                }}
+                                value={
+                                  accessibleModules
+                                    ?.find((m) => m.name === field.value)
+                                    ?.id?.toString() || ""
+                                }
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a module" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {accessibleModules?.map((module) => (
+                                    <SelectItem
+                                      key={module.id}
+                                      value={module.id.toString()}
+                                    >
+                                      {module.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="action"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Action</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select an action" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="create">Create</SelectItem>
-                                <SelectItem value="read">Read</SelectItem>
-                                <SelectItem value="update">Update</SelectItem>
-                                <SelectItem value="delete">Delete</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="action"
+                          render={({ field }) => (
+                            <FormItem className="space-y-2">
+                              <FormLabel className="text-sm font-medium">Action</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select an action" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="create">Create</SelectItem>
+                                  <SelectItem value="read">Read</SelectItem>
+                                  <SelectItem value="update">Update</SelectItem>
+                                  <SelectItem value="delete">Delete</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                      <Button
-                        type="submit"
-                        className="font-semibold flex-shrink-0"
-                        disabled={simulateActionMutation.isPending}
-                      >
-                        {simulateActionMutation.isPending ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                            Checking...
-                          </>
-                        ) : (
-                          <>
-                            <Activity className="h-5 w-5 mr-2" />
-                            Check Permission
-                          </>
-                        )}
-                      </Button>
+                      {/* Submit Button */}
+                      <div className="flex justify-center sm:justify-start">
+                        <Button
+                          type="submit"
+                          className="font-semibold w-full sm:w-auto min-w-[180px]"
+                          disabled={simulateActionMutation.isPending}
+                          size="default"
+                        >
+                          {simulateActionMutation.isPending ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Checking...
+                            </>
+                          ) : (
+                            <>
+                              <Activity className="h-4 w-4 mr-2" />
+                              Check Permission
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </Form>
 
                 {simulationResult && (
-                  <div className="mt-6">
-                    <div className="space-y-3">
+                  <div className="mt-4 sm:mt-6">
+                    <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                       <div className="flex items-center space-x-3">
                         {simulationResult.allowed ? (
                           <CheckCircle className="h-5 w-5 flex-shrink-0 text-green-600" />
                         ) : (
                           <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
                         )}
-                        <div className="font-semibold text-lg">
+                        <div className="font-semibold text-base sm:text-lg">
                           {simulationResult.allowed
                             ? "Access Granted"
                             : "Access Denied"}
@@ -474,18 +487,18 @@ export default function DashboardPage() {
                 )}
 
                 {simulateActionMutation.error && (
-                  <div className="mt-6">
-                    <div className="space-y-3">
+                  <div className="mt-4 sm:mt-6">
+                    <div className="space-y-3 p-4 rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
                       <div className="flex items-center space-x-3">
                         <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
-                        <div className="font-semibold text-lg">Error</div>
+                        <div className="font-semibold text-base sm:text-lg text-red-800 dark:text-red-200">Error</div>
                       </div>
 
-                      <div className="text-sm leading-relaxed pl-0">
+                      <div className="text-sm leading-relaxed pl-0 text-red-700 dark:text-red-300">
                         {simulateActionMutation.error.message}
                       </div>
 
-                      <div className="text-xs leading-relaxed pl-0 text-muted-foreground">
+                      <div className="text-xs leading-relaxed pl-0 text-red-600 dark:text-red-400">
                         Please try again or contact support if the issue persists.
                       </div>
                     </div>
