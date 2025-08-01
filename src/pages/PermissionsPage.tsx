@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Edit, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Shield, X } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EnhancedButton as Button } from "@/components/ui/enhanced-button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -53,6 +54,7 @@ import {
   useDeletePermission,
 } from "@/hooks/usePermissions";
 import { useModules } from "@/hooks/useModules";
+import { useRoles, useAssignPermissionsToRole, useRemovePermissionFromRole } from "@/hooks/useRoles";
 import type { Permission, Module } from "@/types";
 import type { RootState } from "@/store";
 import { canCreate, canUpdate, canDelete } from "@/utils/permissions";
@@ -73,6 +75,11 @@ export default function PermissionsPage() {
   const [editingPermission, setEditingPermission] = useState<Permission | null>(
     null
   );
+  
+  // Role assignment state
+  const [isRoleAssignDialogOpen, setIsRoleAssignDialogOpen] = useState(false);
+  const [selectedPermissionForRoles, setSelectedPermissionForRoles] = useState<Permission | null>(null);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
 
   // Get user permissions
   const { permissions: userPermissions } = useSelector(
@@ -81,6 +88,7 @@ export default function PermissionsPage() {
   const canCreatePermissions = canCreate(userPermissions, "Permissions");
   const canUpdatePermissions = canUpdate(userPermissions, "Permissions");
   const canDeletePermissions = canDelete(userPermissions, "Permissions");
+  const canCreateAssignments = canCreate(userPermissions, "Assignments");
 
   // React Query hooks
   const {
@@ -91,9 +99,13 @@ export default function PermissionsPage() {
   const permissions = permissionsResponse?.data || [];
   const { data: modulesResponse } = useModules({ isActive: true });
   const modules = modulesResponse?.data || [];
+  const { data: rolesResponse } = useRoles({ isActive: true });
+  const roles = rolesResponse?.data || [];
   const createPermissionMutation = useCreatePermission();
   const updatePermissionMutation = useUpdatePermission();
   const deletePermissionMutation = useDeletePermission();
+  const assignPermissionsToRoleMutation = useAssignPermissionsToRole();
+  const removePermissionFromRoleMutation = useRemovePermissionFromRole();
 
   const form = useForm<PermissionFormData>({
     resolver: zodResolver(permissionSchema) as Resolver<PermissionFormData>,
@@ -136,6 +148,70 @@ export default function PermissionsPage() {
     }
 
     deletePermissionMutation.mutate(permissionId);
+  };
+
+  // Role assignment functions
+  const openRoleAssignDialog = (permission: Permission) => {
+    setSelectedPermissionForRoles(permission);
+    setSelectedRoleIds([]);
+    setIsRoleAssignDialogOpen(true);
+  };
+
+  const closeRoleAssignDialog = () => {
+    setIsRoleAssignDialogOpen(false);
+    setSelectedPermissionForRoles(null);
+    setSelectedRoleIds([]);
+  };
+
+  const handleRoleSelection = (roleId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRoleIds(prev => [...prev, roleId]);
+    } else {
+      setSelectedRoleIds(prev => prev.filter(id => id !== roleId));
+    }
+  };
+
+  const handleAssignRoles = async () => {
+    if (!selectedPermissionForRoles || selectedRoleIds.length === 0) {
+      return;
+    }
+
+    console.log('Assigning permission:', selectedPermissionForRoles.id, 'to roles:', selectedRoleIds);
+
+    try {
+      // For each selected role, assign this permission to it
+      for (const roleId of selectedRoleIds) {
+        console.log('Assigning to role:', roleId);
+        const result = await assignPermissionsToRoleMutation.mutateAsync({
+          roleId,
+          data: {
+            permissionIds: [selectedPermissionForRoles.id]
+          }
+        });
+        console.log('Assignment result:', result);
+      }
+      closeRoleAssignDialog();
+    } catch (error) {
+      console.error("Failed to assign permission to roles:", error);
+    }
+  };
+
+  const handleRemovePermissionFromRole = async (roleId: number, permissionId: number) => {
+    if (!window.confirm("Are you sure you want to remove this permission from the role?")) {
+      return;
+    }
+
+    console.log('Removing permission:', permissionId, 'from role:', roleId);
+
+    try {
+      const result = await removePermissionFromRoleMutation.mutateAsync({
+        roleId,
+        permissionId
+      });
+      console.log('Remove result:', result);
+    } catch (error) {
+      console.error("Failed to remove permission from role:", error);
+    }
   };
 
   const onSubmit = async (data: PermissionFormData) => {
@@ -454,6 +530,15 @@ export default function PermissionsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openRoleAssignDialog(permission)}
+                            title="Assign to Roles"
+                            className="hover:bg-green-50 hover:border-green-200 transition-colors"
+                          >
+                            <Shield className="h-4 w-4" />
+                          </Button>
                           {canUpdatePermissions && (
                             <Button
                               variant="outline"
@@ -484,6 +569,92 @@ export default function PermissionsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Role Assignment Dialog */}
+      <Dialog open={isRoleAssignDialogOpen} onOpenChange={closeRoleAssignDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Assign Permission to Roles
+            </DialogTitle>
+            <DialogDescription>
+              Select roles to assign the permission "{selectedPermissionForRoles?.name}" to.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {roles.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                No roles available
+              </p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {roles.map((role) => {
+                  const isAlreadyAssigned = role.permissions?.some(
+                    (permission) => permission.id === selectedPermissionForRoles?.id
+                  );
+                  const isSelected = selectedRoleIds.includes(role.id);
+                  return (
+                    <div key={role.id} className="flex items-center space-x-2 p-2 rounded border">
+                      <Checkbox
+                        id={`role-${role.id}`}
+                        checked={isSelected || isAlreadyAssigned}
+                        disabled={isAlreadyAssigned}
+                        onCheckedChange={(checked) => 
+                          handleRoleSelection(role.id, checked as boolean)
+                        }
+                      />
+                      <label
+                        htmlFor={`role-${role.id}`}
+                        className={`text-sm font-medium leading-none flex-1 ${
+                          isAlreadyAssigned ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-medium">{role.name}</div>
+                          {role.description && (
+                            <div className="text-xs text-muted-foreground">
+                              {role.description}
+                            </div>
+                          )}
+                          {isAlreadyAssigned && (
+                            <div className="text-xs text-green-600">
+                              Already assigned
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                      {isAlreadyAssigned && canCreateAssignments && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemovePermissionFromRole(role.id, selectedPermissionForRoles!.id)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Remove permission from role"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={closeRoleAssignDialog}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAssignRoles}
+              disabled={selectedRoleIds.length === 0 || assignPermissionsToRoleMutation.isPending}
+            >
+              {assignPermissionsToRoleMutation.isPending ? "Assigning..." : "Assign"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

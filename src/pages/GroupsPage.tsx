@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Edit, Trash2, Search, Users, X, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, X } from "lucide-react";
 import { useSelector } from "react-redux";
 import {
   Card,
@@ -47,12 +47,9 @@ import {
   useDeleteGroup,
   useAssignUsersToGroup,
   useRemoveUserFromGroup,
-  useAssignRolesToGroup,
-  useRemoveRoleFromGroup,
 } from "@/hooks/useGroups";
 import { useUsers } from "@/hooks/useUsers";
-import { useRoles } from "@/hooks/useRoles";
-import type { Group, User, Role } from "@/types";
+import type { Group, User } from "@/types";
 import type { RootState } from "@/store";
 import { canCreate, canRead, canUpdate, canDelete } from "@/utils/permissions";
 
@@ -72,10 +69,6 @@ export default function GroupsPage() {
   const [selectedGroupForUsers, setSelectedGroupForUsers] =
     useState<Group | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-  const [isRoleAssignDialogOpen, setIsRoleAssignDialogOpen] = useState(false);
-  const [selectedGroupForRoles, setSelectedGroupForRoles] =
-    useState<Group | null>(null);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
 
   // Get user permissions from Redux store
   const { permissions } = useSelector((state: RootState) => state.auth);
@@ -94,15 +87,11 @@ export default function GroupsPage() {
   const groups = groupsResponse?.data || [];
   const { data: usersResponse } = useUsers({});
   const users = usersResponse?.data || [];
-  const { data: rolesResponse } = useRoles({});
-  const roles = rolesResponse?.data || [];
   const createGroupMutation = useCreateGroup();
   const updateGroupMutation = useUpdateGroup();
   const deleteGroupMutation = useDeleteGroup();
   const assignUsersToGroupMutation = useAssignUsersToGroup();
   const removeUserFromGroupMutation = useRemoveUserFromGroup();
-  const assignRolesToGroupMutation = useAssignRolesToGroup();
-  const removeRoleFromGroupMutation = useRemoveRoleFromGroup();
 
   const form = useForm<GroupFormData>({
     resolver: zodResolver(groupSchema) as Resolver<GroupFormData>,
@@ -192,54 +181,7 @@ export default function GroupsPage() {
     }
   };
 
-  const handleRemoveRoleFromGroup = async (groupId: number, roleId: number) => {
-    if (
-      window.confirm(
-        "Are you sure you want to remove this role from the group?"
-      )
-    ) {
-      try {
-        await removeRoleFromGroupMutation.mutateAsync({ groupId, roleId });
-        closeRoleAssignDialog();
-      } catch (error) {
-        console.error("Failed to remove role from group:", error);
-      }
-    }
-  };
 
-  const openRoleAssignDialog = (group: Group) => {
-    setSelectedGroupForRoles(group);
-    setSelectedRoleIds([]);
-    setIsRoleAssignDialogOpen(true);
-  };
-
-  const closeRoleAssignDialog = () => {
-    setIsRoleAssignDialogOpen(false);
-    setSelectedGroupForRoles(null);
-    setSelectedRoleIds([]);
-  };
-
-  const handleRoleSelection = (roleId: number, checked: boolean) => {
-    if (checked) {
-      setSelectedRoleIds((prev) => [...prev, roleId]);
-    } else {
-      setSelectedRoleIds((prev) => prev.filter((id) => id !== roleId));
-    }
-  };
-
-  const handleAssignRoles = async () => {
-    if (!selectedGroupForRoles || selectedRoleIds.length === 0) return;
-
-    try {
-      await assignRolesToGroupMutation.mutateAsync({
-        groupId: selectedGroupForRoles.id,
-        roleIds: selectedRoleIds,
-      });
-      closeRoleAssignDialog();
-    } catch (error) {
-      console.error("Failed to assign roles to group:", error);
-    }
-  };
 
   const onSubmit = async (data: GroupFormData) => {
     if (editingGroup) {
@@ -486,21 +428,6 @@ export default function GroupsPage() {
                               <Users className="h-4 w-4" />
                             </Button>
                           )}
-                          {(canCreateAssignments || canReadAssignments) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openRoleAssignDialog(group)}
-                              title={
-                                canCreateAssignments
-                                  ? "Assign Roles"
-                                  : "View Roles"
-                              }
-                              className="hover:bg-purple-50 hover:border-purple-200 transition-colors"
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                          )}
                           {canUpdateGroups && (
                             <Button
                               variant="outline"
@@ -625,98 +552,7 @@ export default function GroupsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Role Assignment Dialog */}
-      <Dialog
-        open={isRoleAssignDialogOpen}
-        onOpenChange={setIsRoleAssignDialogOpen}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {canCreateAssignments ? "Assign Roles to" : "View Roles in"}{" "}
-              {selectedGroupForRoles?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {canCreateAssignments
-                ? "Select roles to assign to this group. Users in this group will inherit these role permissions."
-                : "View the roles currently assigned to this group. Users in this group inherit these role permissions."}
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {roles.map((role: Role) => {
-                const isAlreadyAssigned = selectedGroupForRoles?.roles?.some(
-                  (r) => r.id === role.id
-                );
-                const isSelected = selectedRoleIds.includes(role.id);
-
-                return (
-                  <div
-                    key={role.id}
-                    className="flex items-center space-x-2 p-2 rounded border"
-                  >
-                    <Checkbox
-                      checked={isSelected || isAlreadyAssigned}
-                      disabled={!canCreateAssignments || isAlreadyAssigned}
-                      onCheckedChange={(checked: boolean) =>
-                        handleRoleSelection(role.id, checked)
-                      }
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{role.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {role.description || "No description"}
-                      </div>
-                      {isAlreadyAssigned && (
-                        <div className="text-xs text-green-600">
-                          Already assigned
-                        </div>
-                      )}
-                    </div>
-                    {isAlreadyAssigned && canCreateAssignments && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleRemoveRoleFromGroup(
-                            selectedGroupForRoles!.id,
-                            role.id
-                          )
-                        }
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={closeRoleAssignDialog}>
-                {canCreateAssignments ? "Cancel" : "Close"}
-              </Button>
-              {canCreateAssignments && (
-                <Button
-                  onClick={handleAssignRoles}
-                  disabled={
-                    selectedRoleIds.length === 0 ||
-                    assignRolesToGroupMutation.isPending
-                  }
-                >
-                  {assignRolesToGroupMutation.isPending
-                    ? "Assigning..."
-                    : `Assign ${selectedRoleIds.length} Role${
-                        selectedRoleIds.length !== 1 ? "s" : ""
-                      }`}
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

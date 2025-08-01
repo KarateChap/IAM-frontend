@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Edit, Trash2, Search, Key } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users } from "lucide-react";
 import { useSelector } from "react-redux";
 import {
   Card,
@@ -40,17 +40,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   useRoles,
   useCreateRole,
   useUpdateRole,
   useDeleteRole,
-  useAssignPermissionsToRole,
 } from "@/hooks/useRoles";
-import { usePermissions } from "@/hooks/usePermissions";
-import type { Role, Permission } from "@/types";
+import { useGroups, useAssignRolesToGroup } from "@/hooks/useGroups";
+import type { Role, Group } from "@/types";
 import type { RootState } from "@/store";
-import { canCreate, canRead, canUpdate, canDelete } from "@/utils/permissions";
+import { canCreate, canUpdate, canDelete } from "@/utils/permissions";
 
 const roleSchema = z.object({
   name: z.string().min(1, "Role name is required"),
@@ -64,13 +64,11 @@ export default function RolesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [isPermissionAssignDialogOpen, setIsPermissionAssignDialogOpen] =
-    useState(false);
-  const [selectedRoleForPermissions, setSelectedRoleForPermissions] =
-    useState<Role | null>(null);
-  const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>(
-    []
-  );
+  
+  // Group assignment state
+  const [isGroupAssignDialogOpen, setIsGroupAssignDialogOpen] = useState(false);
+  const [selectedRoleForGroups, setSelectedRoleForGroups] = useState<Role | null>(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
 
   // Get user permissions from Redux store
   const { permissions: userPermissions } = useSelector(
@@ -81,10 +79,9 @@ export default function RolesPage() {
   const canCreateRoles = canCreate(userPermissions, "Roles");
   const canUpdateRoles = canUpdate(userPermissions, "Roles");
   const canDeleteRoles = canDelete(userPermissions, "Roles");
-
+  
   // Check permissions for Assignments module
   const canCreateAssignments = canCreate(userPermissions, "Assignments");
-  const canReadAssignments = canRead(userPermissions, "Assignments");
 
   // React Query hooks
   const {
@@ -93,12 +90,12 @@ export default function RolesPage() {
     error,
   } = useRoles({ search: searchTerm });
   const roles = rolesResponse?.data || [];
-  const { data: permissionsResponse } = usePermissions({});
-  const permissions = permissionsResponse?.data || [];
+  const { data: groupsResponse } = useGroups({});
+  const groups = groupsResponse?.data || [];
   const createRoleMutation = useCreateRole();
   const updateRoleMutation = useUpdateRole();
   const deleteRoleMutation = useDeleteRole();
-  const assignPermissionsToRoleMutation = useAssignPermissionsToRole();
+  const assignRolesToGroupMutation = useAssignRolesToGroup();
 
   const form = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema) as Resolver<RoleFormData>,
@@ -158,44 +155,37 @@ export default function RolesPage() {
     }
   };
 
-  const openPermissionAssignDialog = (role: Role) => {
-    setSelectedRoleForPermissions(role);
-    setSelectedPermissionIds([]);
-    setIsPermissionAssignDialogOpen(true);
+  // Group assignment functions
+  const openGroupAssignDialog = (role: Role) => {
+    setSelectedRoleForGroups(role);
+    setSelectedGroupIds([]);
+    setIsGroupAssignDialogOpen(true);
   };
 
-  const closePermissionAssignDialog = () => {
-    setIsPermissionAssignDialogOpen(false);
-    setSelectedRoleForPermissions(null);
-    setSelectedPermissionIds([]);
+  const closeGroupAssignDialog = () => {
+    setSelectedRoleForGroups(null);
+    setSelectedGroupIds([]);
+    setIsGroupAssignDialogOpen(false);
   };
 
-  const handlePermissionSelection = (
-    permissionId: number,
-    checked: boolean
-  ) => {
+  const handleGroupSelection = (groupId: number, checked: boolean) => {
     if (checked) {
-      setSelectedPermissionIds((prev) => [...prev, permissionId]);
+      setSelectedGroupIds(prev => [...prev, groupId]);
     } else {
-      setSelectedPermissionIds((prev) =>
-        prev.filter((id) => id !== permissionId)
-      );
+      setSelectedGroupIds(prev => prev.filter(id => id !== groupId));
     }
   };
 
-  const handleAssignPermissions = async () => {
-    if (!selectedRoleForPermissions || selectedPermissionIds.length === 0)
-      return;
-
-    try {
-      await assignPermissionsToRoleMutation.mutateAsync({
-        roleId: selectedRoleForPermissions.id,
-        data: { permissionIds: selectedPermissionIds },
+  const handleAssignGroups = async () => {
+    if (!selectedRoleForGroups || selectedGroupIds.length === 0) return;
+    
+    for (const groupId of selectedGroupIds) {
+      await assignRolesToGroupMutation.mutateAsync({
+        groupId,
+        roleIds: [selectedRoleForGroups.id]
       });
-      closePermissionAssignDialog();
-    } catch (error) {
-      console.error("Failed to assign permissions to role:", error);
     }
+    closeGroupAssignDialog();
   };
 
   const filteredRoles = roles.filter(
@@ -317,6 +307,45 @@ export default function RolesPage() {
             </DialogContent>
           </Dialog>
         )}
+        
+        {/* Group Assignment Dialog */}
+        <Dialog open={isGroupAssignDialogOpen} onOpenChange={setIsGroupAssignDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Assign Role to Groups</DialogTitle>
+              <DialogDescription>
+                Select groups to assign the role "{selectedRoleForGroups?.name}" to.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {groups.map((group: Group) => (
+                  <div key={group.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`group-${group.id}`}
+                      checked={selectedGroupIds.includes(group.id)}
+                      onCheckedChange={(checked) => handleGroupSelection(group.id, checked as boolean)}
+                    />
+                    <label htmlFor={`group-${group.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {group.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={closeGroupAssignDialog}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAssignGroups}
+                  disabled={selectedGroupIds.length === 0 || assignRolesToGroupMutation.isPending}
+                >
+                  {assignRolesToGroupMutation.isPending ? "Assigning..." : "Assign"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {error && (
@@ -401,21 +430,6 @@ export default function RolesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          {(canCreateAssignments || canReadAssignments) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openPermissionAssignDialog(role)}
-                              title={
-                                canCreateAssignments
-                                  ? "Assign Permissions"
-                                  : "View Permissions"
-                              }
-                              className="hover:bg-orange-50 hover:border-orange-200 transition-colors"
-                            >
-                              <Key className="h-4 w-4" />
-                            </Button>
-                          )}
                           {canUpdateRoles && (
                             <Button
                               variant="outline"
@@ -424,6 +438,17 @@ export default function RolesPage() {
                               className="hover:bg-blue-50 hover:border-blue-200 transition-colors"
                             >
                               <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canCreateAssignments && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openGroupAssignDialog(role)}
+                              title="Assign to Groups"
+                              className="hover:bg-green-50 hover:border-green-200 transition-colors"
+                            >
+                              <Users className="h-4 w-4" />
                             </Button>
                           )}
                           {canDeleteRoles && (
@@ -447,88 +472,7 @@ export default function RolesPage() {
         </CardContent>
       </Card>
 
-      {/* Permission Assignment Dialog */}
-      <Dialog
-        open={isPermissionAssignDialogOpen}
-        onOpenChange={setIsPermissionAssignDialogOpen}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {canCreateAssignments
-                ? "Assign Permissions to"
-                : "View Permissions for"}{" "}
-              {selectedRoleForPermissions?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {canCreateAssignments
-                ? "Select permissions to assign to this role. Users with this role will inherit these permissions."
-                : "View the permissions currently assigned to this role. Users with this role inherit these permissions."}
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="max-h-60 overflow-y-auto space-y-2">
-              {permissions.map((permission: Permission) => {
-                const isAlreadyAssigned =
-                  selectedRoleForPermissions?.permissions?.some(
-                    (p) => p.id === permission.id
-                  );
-                const isSelected = selectedPermissionIds.includes(
-                  permission.id
-                );
-
-                return (
-                  <div
-                    key={permission.id}
-                    className="flex items-center space-x-2 p-2 rounded border"
-                  >
-                    <Checkbox
-                      checked={isSelected || isAlreadyAssigned}
-                      disabled={!canCreateAssignments || isAlreadyAssigned}
-                      onCheckedChange={(checked: boolean) =>
-                        handlePermissionSelection(permission.id, checked)
-                      }
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{permission.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {permission.module?.name} - {permission.action}
-                      </div>
-                      {isAlreadyAssigned && (
-                        <div className="text-xs text-green-600">
-                          Already assigned
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={closePermissionAssignDialog}>
-                {canCreateAssignments ? "Cancel" : "Close"}
-              </Button>
-              {canCreateAssignments && (
-                <Button
-                  onClick={handleAssignPermissions}
-                  disabled={
-                    selectedPermissionIds.length === 0 ||
-                    assignPermissionsToRoleMutation.isPending
-                  }
-                >
-                  {assignPermissionsToRoleMutation.isPending
-                    ? "Assigning..."
-                    : `Assign ${selectedPermissionIds.length} Permission${
-                        selectedPermissionIds.length !== 1 ? "s" : ""
-                      }`}
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

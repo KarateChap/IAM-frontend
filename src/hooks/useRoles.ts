@@ -64,3 +64,16 @@ export const useAssignPermissionsToRole = () => {
     },
   })
 }
+
+export const useRemovePermissionFromRole = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ roleId, permissionId }: { roleId: number; permissionId: number }) =>
+      rolesService.removePermissionFromRole(roleId, permissionId),
+    onSuccess: (_, { roleId }) => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+      queryClient.invalidateQueries({ queryKey: ['roles', roleId] })
+    },
+  })
+}
